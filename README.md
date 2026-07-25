@@ -44,7 +44,7 @@ On macOS/Linux use `.venv/bin/python` instead of `.venv\Scripts\python`.
 
 ```powershell
 cd C:\Users\samba\cc1\mlb-predictor
-.\predict.ps1
+.venv\Scripts\python -m mlbpred.predict --date today
 ```
 
 That is the whole routine. It takes ~30 seconds and:
@@ -61,11 +61,12 @@ Useful details:
   making a new one. Tomorrow gets its own file.
 - **Re-run a few hours before first pitch.** Lineups drop progressively, and rows flip from
   `carried` to `posted` as they do. `posted` rows are the trustworthy ones.
-- `.\predict.ps1 2026-08-01` for another date, `.\predict.ps1 today -Fast` to skip the
-  refresh and use cached data (~2s, for when you just want to re-read the numbers).
-- If PowerShell blocks the script, either run
-  `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or skip the script entirely:
-  `.venv\Scripts\python -m mlbpred.predict --date today`.
+- `--date 2026-08-01` for another date; add `--no-refresh` to skip the download and re-read
+  cached numbers (~2s).
+- `predict.ps1` is a shorter wrapper for the same thing (`.\predict.ps1`,
+  `.\predict.ps1 2026-08-01`, `.\predict.ps1 today -Fast`). Windows blocks unsigned scripts
+  by default, so it needs `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` run once -
+  entirely optional, the `python -m` command above never needs it.
 
 **Occasional maintenance** (not daily):
 
