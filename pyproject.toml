@@ -6,6 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "mlb-predictor"
 version = "0.1.0"
 description = "Pregame MLB win-probability and box-score prediction models"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Sam Bajracharya" }]
 requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.0",

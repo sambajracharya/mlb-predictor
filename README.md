@@ -338,3 +338,11 @@ python -m mlbpred.backtest --test-seasons 2023 2024 2025 2026 --include-statcast
 
 Extending to other sports is a matter of swapping ingest + feature modules; the training,
 backtest, and leakage-test structure carries over unchanged.
+
+## License
+
+MIT - see [LICENSE](LICENSE).
+
+Data comes from the public MLB Stats API, Baseball Savant, and Polymarket's public APIs.
+This is a personal research project: it is not affiliated with MLB or Polymarket, and
+nothing here is betting or investment advice.
