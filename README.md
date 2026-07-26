@@ -184,6 +184,32 @@ Interpretation:
   edge is speed and information (posted lineups, late scratches, weather updates) rather
   than a better rolling-average model.
 
+### Could a thinner market be beaten instead?
+
+The natural follow-up: moneylines are efficient, so price the *other* markets - totals, run
+lines, player props - where fewer sharp participants are looking. Measured across 7,714 MLB
+markets on 428 games before building anything:
+
+| Market | Markets | Zero volume | Median volume | Live spread | Bid depth |
+|---|---|---|---|---|---|
+| Moneyline | 146 | 26% | $160,140 | **1c** | $8,577 |
+| Game total (O/U) | 531 | 8% | $3,773 | 15c | **$21** |
+| Run line | 459 | 8% | $1,185 | 5c | $412 |
+| 1st inning run | 146 | 43% | $312 | 6c | $2,255 |
+| Player prop | 5,309 | **75%** | **$0** | 4c | **$0.05** |
+| F5 winner / spread | 625 | 32% | $27 | no book | $0 |
+
+All 5,309 player-prop markets together traded $417k - less than three moneyline games.
+
+Holding to resolution costs about half the spread, so a game total needs the model to be
+**7.5 percentage points** better calibrated than the market on that exact line. This one is
+not measurably 0.5 points better on moneylines.
+
+The structure is consistent and it closes the thesis: **the only market deep enough to trade
+is the efficient one.** The thin markets are not mispriced-and-exploitable, they are
+untradeable - $21 of bids on a game total means a position you cannot exit, and five cents
+on a prop means no reliable mid price to trade against.
+
 ## How leakage is prevented
 
 This is the part that decides whether the project is real.
@@ -328,6 +354,41 @@ Both are one flag away if you want to revisit:
 python -m mlbpred.backtest --test-seasons 2023 2024 2025 2026 --include-statcast --include-hand
 ```
 
+### Deriving win probability from a joint run distribution
+
+The obvious "next architecture" is to stop predicting the winner directly: model each side's
+runs as a distribution, then compute `P(home runs > away runs)`. A full plate-appearance
+simulator is the heavyweight version of the same idea. Tested before building anything -
+negative binomial around the existing LGBM Poisson means, dispersion fitted by MLE, ties
+split 50/50 (they go to extra innings):
+
+| Method | 2023 | 2024 | 2025 | 2026 | mean log loss |
+|---|---|---|---|---|---|
+| blend: 50/50 direct + NB | 0.6817 | 0.6798 | 0.6818 | 0.6874 | 0.6827 |
+| **direct classifier (current)** | 0.6824 | 0.6806 | 0.6811 | 0.6890 | **0.6833** |
+| derived: NB, independent | 0.6830 | 0.6808 | 0.6842 | 0.6874 | 0.6838 |
+| derived: NB + Gaussian copula | 0.6837 | 0.6807 | 0.6843 | 0.6868 | 0.6839 |
+| derived: Poisson | 0.6875 | 0.6825 | 0.6880 | 0.6902 | 0.6871 |
+
+**Derived loses to the direct classifier.** The distributional layer adds no information - it
+routes the same features through a lossier path. A simulator would be a heavier, more
+assumption-laden version of the approach that already lost, so it was never built.
+
+The 50/50 blend does edge the current model by 0.0006 on 3 of 4 folds. Left out: for
+comparison the lineup features were worth 0.0014 on 4/4 folds, and this costs two extra
+models plus a dispersion fit in the prediction path for an effect indistinguishable from
+noise.
+
+Two useful things did fall out of the experiment:
+
+- **Runs are heavily overdispersed.** NB beat Poisson decisively (0.6838 vs 0.6871); fitted
+  dispersion r ~ 3.6-4.6 implies a variance near 9.6 where Poisson assumes ~4.5. Point
+  predictions are unaffected, but **any interval derived from the Poisson run models would be
+  far too narrow.** Treat `pred_home_runs` as a center, not a forecast with known spread.
+- **The two teams' scores are conditionally independent** given the features (residual
+  correlation 0.007-0.018). Shared park and weather effects are already absorbed by the
+  feature set, which is why the copula version added nothing.
+
 ## Sensible next steps
 
 1. **Push the lineup idea further** now that it is the one thing that worked: per-hitter
@@ -336,17 +397,17 @@ python -m mlbpred.backtest --test-seasons 2023 2024 2025 2026 --include-statcast
 2. **Train with lineup dropout** - randomly blank lineup features during training so the
    model learns a sensible fallback for the ~2/3 of a slate that has no posted lineup yet.
    Right now `carried` rows lean on a feature the model has never seen missing.
-3. **Model the score jointly** instead of two independent Poissons, then derive win
-   probability from the run distribution - it will make the two heads consistent and gives
-   totals/run-line probabilities for free.
-4. **Shrink early-season features toward priors** (`w = n/(n+K)` blending with last season)
+3. **Shrink early-season features toward priors** (`w = n/(n+K)` blending with last season)
    so April games are usable instead of dropped.
-5. **Bullpen quality, not just workload** - rolling reliever-only ERA/K% from team pitching
+4. **Bullpen quality, not just workload** - rolling reliever-only ERA/K% from team pitching
    minus the starter's line.
-6. **More targets** - `home_hits`, `away_hits`, `home_hr`, `away_hr`, `home_so`, `away_so`
+5. **More targets** - `home_hits`, `away_hits`, `home_hr`, `away_hr`, `home_so`, `away_so`
    are already in the dataset; pass them to `--targets` to train those models.
-7. **Then generalise** - the ingest/features/train/backtest split is sport-agnostic; a new
+6. **Then generalise** - the ingest/features/train/backtest split is sport-agnostic; a new
    sport means a new `ingest.py` and `features.py`, not a new architecture.
+
+Deliberately *not* on this list: a game simulator, and chasing thinner Polymarket markets.
+Both were tested and ruled out - see the negative results above and the liquidity note below.
 
 Extending to other sports is a matter of swapping ingest + feature modules; the training,
 backtest, and leakage-test structure carries over unchanged.
