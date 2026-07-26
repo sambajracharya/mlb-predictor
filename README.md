@@ -42,6 +42,9 @@ On macOS/Linux use `.venv/bin/python` instead of `.venv\Scripts\python`.
 
 ## Daily use
 
+**[OPERATIONS.md](OPERATIONS.md) is the runbook** - what to run daily, how to score yesterday,
+when to retrain, and what numbers should worry you. Short version:
+
 ```powershell
 cd C:\Users\samba\cc1\mlb-predictor
 .venv\Scripts\python -m mlbpred.predict --date today
