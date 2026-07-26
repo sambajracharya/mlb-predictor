@@ -213,6 +213,57 @@ is the efficient one.** The thin markets are not mispriced-and-exploitable, they
 untradeable - $21 of bids on a game total means a position you cannot exit, and five cents
 on a prop means no reliable mid price to trade against.
 
+### Is the market slow to price posted lineups?
+
+The last plausible angle, and the one that does not require out-predicting anyone: lineups
+are public ~3h before first pitch, so if the market repriced *slowly* on lineup news you
+could trade the lag. Measured on 180 of 2026's most liquid games using minute-level price
+history, with "lineup surprise" defined as a lineup's deviation from that team's own recent
+norm.
+
+**How much is left to learn before first pitch?** Mean distance from the final pregame price:
+
+| Time to first pitch | Normal lineup | Surprising lineup |
+|---|---|---|
+| 4-6h | 1.42c | 1.17c |
+| 3-4h | 1.17c | 1.09c |
+| 2-3h | 0.92c | 0.74c |
+| 1-2h | 0.73c | 0.36c |
+| 0-1h | 0.40c | 0.23c |
+
+Six hours out the price is already within **1.4 cents** of where it settles. That is the
+entire information content of the final six hours - lineups, scratches, weather, all of it -
+against a **1 cent spread**. The prize is barely larger than the friction. Surprising lineups
+move *less* than normal ones, which is the opposite of what a lagging market would do.
+
+**And when it does move, can you react?** In the 1-4h window (131 games with real movement):
+
+- mean total price path: **3.44c**
+- largest single minute: **1.18c** = **63.6% of all movement**
+- median minutes with meaningful movement, in a three-hour window: **2**
+
+Prices sit flat, reprice instantly, sit flat again. There is no gradual drift to trade into -
+by the time the move is observable it is finished.
+
+Caveats worth stating: the surprise metric measures deviation from a team's own norm, not
+from *market* expectation, so a player on the IL for a week counts as "surprising" here while
+being old news to the market. And minute bars could mask sub-minute repricing, which would
+only make it less exploitable. Neither affects the headline: 1.4c of total pregame
+information against a 1c spread.
+
+### Summary: three independent reasons the trading thesis fails
+
+1. **No independent signal** - in a regression of outcomes on both, the market coefficient is
+   strongly significant and the model's is not (z < 1, both seasons).
+2. **No tradeable venue** - the markets this model might beat have no liquidity; the one with
+   liquidity is efficient.
+3. **No exploitable lag** - pregame information is worth less than the spread, and what
+   movement exists is instantaneous.
+
+The model is good. The market is better, and the plumbing does not permit capturing the
+difference even if it existed. That is a complete answer, and it is worth more than a
+plausible-looking ROI number would have been.
+
 ## How leakage is prevented
 
 This is the part that decides whether the project is real.
@@ -327,8 +378,9 @@ team-level attempt suggested.
 third posted a few hours out. `carry_forward_lineups` fills the rest with each team's most
 recent posted lineup, and predictions carry a `lineups` column reading `posted` or `carried`
 so you can tell which rows use tonight's actual nine. The model has effectively never seen a
-missing lineup in training, so treat `carried` rows as the weaker predictions - and note that
-re-running once lineups drop is the closest thing here to a real edge over a slow market.
+missing lineup in training, so treat `carried` rows as the weaker predictions and re-run once
+lineups drop. (Re-running sharpens *your* forecast - it is not an edge over the market, which
+prices lineup news instantly. See the lag measurement below.)
 
 ## Things that were tried and did not work
 
