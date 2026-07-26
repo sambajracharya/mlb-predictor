@@ -68,6 +68,17 @@ Useful details:
   by default, so it needs `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` run once -
   entirely optional, the `python -m` command above never needs it.
 
+**Scoring yourself against reality:**
+
+```powershell
+.venv\Scripts\python -m mlbpred.score --date 2026-07-25      # one day
+.venv\Scripts\python -m mlbpred.score --since 2026-07-01 --quiet   # pooled
+```
+
+Prints accuracy, log loss and run MAE against the same baselines the backtest uses, with a
+confidence interval next to the accuracy. One slate is 15 games (±25% at 95% confidence), so
+treat single days as a bug check; ~500 games is where live results start to mean anything.
+
 **Occasional maintenance** (not daily):
 
 ```powershell
@@ -239,6 +250,7 @@ src/mlbpred/
   baselines.py      home-field, log5, league-mean, team-form baselines
   train.py          fit + save models
   backtest.py       walk-forward evaluation vs baselines
+  score.py          saved predictions vs what actually happened
   statcast.py       Baseball Savant -> per-game xwOBA/barrel/whiff aggregates
   polymarket.py     Polymarket Gamma/CLOB -> pregame market prices
   market_eval.py    model vs market scoring + paper-trade simulation
